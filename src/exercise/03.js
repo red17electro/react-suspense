@@ -24,7 +24,9 @@ function PokemonInfo({pokemonResource}) {
 }
 
 const SUSPENSE_CONFIG = {
-  timeoutMs: 4000,
+  timeoutMs: 400,
+  busyDelayMs: 200,
+  busyMinDurationMs: 400,
 }
 
 function createPokemonResource(pokemonName) {
@@ -59,7 +61,7 @@ function App() {
     <div className="pokemon-info-app">
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
-      <div style={{opacity: isPending ? 0.6 : 1}} className="pokemon-info">
+      <div className={`pokemon-info ${isPending? 'pokemon-loading' : ''}`}>
         {pokemonResource ? (
           <PokemonErrorBoundary
             onReset={handleReset}
