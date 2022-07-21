@@ -35,16 +35,37 @@ function createPokemonResource(pokemonName) {
   return createResource(fetchPokemon(pokemonName))
 }
 
-function PokemonCacheProvider({children}) {
+function PokemonCacheProvider({children, cacheTime}) {
   const cache = React.useRef({})
-  const getPokemonResource = React.useCallback(pokemonName => {
-    pokemonName = pokemonName.toLowerCase()
-    if (!cache.current[pokemonName]) {
-      cache.current[pokemonName] = createPokemonResource(pokemonName)
-      return cache.current[pokemonName]
-    }
-    return cache.current[pokemonName]
+  const expirations = React.useRef({})
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      Object.keys(expirations.current).forEach(key => {
+        if (expirations.current[key] < Date.now()) {
+          delete cache.current[key]
+          delete expirations.current[key]
+        }
+      })
+    }, 1000)
+    return () => clearInterval(interval)
   }, [])
+
+  const getPokemonResource = React.useCallback(
+    pokemonName => {
+      pokemonName = pokemonName.toLowerCase()
+      if (!cache.current[pokemonName]) {
+        cache.current[pokemonName] = createPokemonResource(pokemonName)
+        setTimeout(() => {
+          delete cache.current[pokemonName]
+        }, cacheTime)
+        return cache.current[pokemonName]
+      }
+      expirations.current[pokemonName] = Date.now() + cacheTime
+      return cache.current[pokemonName]
+    },
+    [cacheTime],
+  )
 
   return (
     <CacheContext.Provider value={getPokemonResource}>
@@ -55,7 +76,7 @@ function PokemonCacheProvider({children}) {
 
 function AppWithProvider() {
   return (
-    <PokemonCacheProvider>
+    <PokemonCacheProvider cacheTime={5000}>
       <App />
     </PokemonCacheProvider>
   )
